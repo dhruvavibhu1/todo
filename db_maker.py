@@ -1,3 +1,4 @@
+"""Creates the todo database"""
 import sqlite3
 
 print("Started creating the todo database")
