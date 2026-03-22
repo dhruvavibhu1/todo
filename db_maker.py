@@ -2,7 +2,7 @@
 # imports the sqlite3 library, which allows us to interact with SQLite databases
 import sqlite3
 
-# prints a message to the console indicating that the process of creating the todo database has started
+# prints a message indicating that the process of creating the todo database has started
 print("Started creating the todo database")
 
 # python will create a new file called 'todo.db'
