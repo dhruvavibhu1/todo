@@ -21,6 +21,7 @@ def todo_list():
         row_id, category, item = row
 
         table_rows += f"""
+        # html code
         <tr>
             <td>{category}</td>
             <td>{item}</td>
@@ -40,9 +41,20 @@ def todo_list():
             <title>To-Do List</title>
         </head>
         <body>
+            <h1>To-Do List</h1>
+            <table border="1">
+                <tr>
+                    <th>Category</th>
+                    <th>Item</th>
+                    <th>Action</th>
+                </tr>
+                {table_rows}
+            </table>
         </body>
         </html>
         """
+
+        return html
 
 # Starts the webserver
 run(host= 'localhost', port=8080)
