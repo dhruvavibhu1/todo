@@ -9,7 +9,7 @@ print("Started creating the todo database")
 conn = sqlite3.connect('todo.db')
 
 # creates a table called "todo" with three columns
-conn.execute("CREATE TABLE todo (category VARCHAR (50), item VARCHAR(100))")
+conn.execute("CREATE TABLE todo (category VARCHAR (50), item VARCHAR(100),id INTEGER PRIMARY KEY)")
 
 # adds 5 records to the todo table, each with a category and an item
 conn.execute("INSERT INTO todo (category, item) VALUES ('shopping', 'eggs')")
