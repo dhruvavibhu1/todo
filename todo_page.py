@@ -2,6 +2,7 @@
 #Imports required modules
 import sqlite3
 from bottle import route, run, request, redirect
+from calendar_integration import add_todo_to_calendar, get_calendar_events
 
 def execute_query(query, params=(), fetch=False):
     """Handles database interactions"""
@@ -79,6 +80,14 @@ def todo_list():
                 <input type="text" name="item" placeholder="New item" required>
                 <button type="submit">Add</button>
             </form>
+            <div style="margin: 20px 0;">
+                <form action="/sync_to_calendar", method="POST" style="display: inline;">
+                    <button type="submit" style="background-color: #2196F3;">Sync All to Calendar</button>
+                </form>
+                <a href="/calendar_events" style="margin-left: 10px;">
+                    <button style="background-color: #FF9800;">View Calendar Events</button>
+                </a>
+            </div>
             <table>
                 <tr>
                     <th>Category</th>
@@ -113,5 +122,60 @@ def new_item():
     redirect('/')
 
 
+@route('/sync_to_calendar', method='POST')
+def sync_to_calendar():
+    """Sync all todo items to Google Calendar"""
+    rows = execute_query("SELECT category, item FROM todo", fetch=True)
+    results = []
+    for row in rows:
+        category, item = row
+        result = add_todo_to_calendar(category, item)
+        results.append(f"{category}: {item} - {result}")
+    # For now, just redirect. In a real app, you'd show results
+    redirect('/')
+
+@route('/calendar_events')
+def calendar_events():
+    """Show upcoming calendar events"""
+    events = get_calendar_events()
+
+    if isinstance(events, str):  # Error message
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Calendar Events</title>
+        </head>
+        <body>
+            <h1>Calendar Events</h1>
+            <p>Error: {events}</p>
+            <a href="/">Back to Todo List</a>
+        </body>
+        </html>
+        """
+    else:
+        event_list = ""
+        for event in events:
+            start = event['start'].get('dateTime', event['start'].get('date'))
+            event_list += f"<li>{event['summary']} - {start}</li>"
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Calendar Events</title>
+        </head>
+        <body>
+            <h1>Upcoming Calendar Events</h1>
+            <ul>{event_list}</ul>
+            <a href="/">Back to Todo List</a>
+        </body>
+        </html>
+        """
+
+    return html
+
+
 #Starts the webserver
-run(host = 'localhost', port = 8080)
+if __name__ == '__main__':
+    run(host = 'localhost', port = 8080)
