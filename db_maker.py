@@ -1,25 +1,25 @@
-"""Creates the todo database"""
-# imports the sqlite3 library, which allows us to interact with SQLite databases
+"""Creates the todo data base"""
+#Imports the sqlite library
 import sqlite3
 
-# prints a message indicating that the process of creating the todo database has started
+#Prints text to the screen
 print("Started creating the todo database")
 
-# python will create a new file called 'todo.db'
+#Creates the database in the current folder
 conn = sqlite3.connect('todo.db')
 
-# creates a table called "todo" with three columns
-conn.execute("CREATE TABLE todo (category VARCHAR (50), item VARCHAR(100),id INTEGER PRIMARY KEY)")
+#Creates the tables with 3 fields
+conn.execute("CREATE TABLE todo (category VARCHAR(50), item VARCHAR(100),id INTEGER PRIMARY KEY)")
 
-# adds 5 records to the todo table, each with a category and an item
+#Adds 5 records to the table
 conn.execute("INSERT INTO todo (category, item) VALUES ('shopping', 'eggs')")
-conn.execute("INSERT INTO todo (category, item) VALUES ('shopping', 'milk')")
-conn.execute("INSERT INTO todo (category, item) VALUES ('shopping', 'flour')")
-conn.execute("INSERT INTO todo (category, item) VALUES ('activity', 'Clean the house')")
-conn.execute("INSERT INTO todo (category, item) VALUES ('activity', 'Do homework')")
+conn.execute("INSERT INTO todo (category, item) VALUES ('Shopping', 'milk')")
+conn.execute("INSERT INTO todo (category, item) VALUES ('Shopping', 'flour')")
+conn.execute("INSERT INTO todo (category, item) VALUES ('Activity', 'Clean house')")
+conn.execute("INSERT INTO todo (category, item) VALUES ('Activity', 'Do homework')")
 
-# commits the changes to the database, ensuring that the new table and records are saved
+#Saves changes
 conn.commit()
 
-# prints a message to the console indicating that the database has been created successfully
-print("Database has been created")
+#Print text to the screen
+print("Database has been created.")
