@@ -75,13 +75,13 @@ def todo_list():
         <body>
             <h1>To-do list</h1>
             <h1 style="color:blue">Add new item</h1>
-            <form action="/new", method="POST">
+            <form action="/new" method="POST">
                 <input type="text" name="newcat" placeholder="Category" required>
                 <input type="text" name="item" placeholder="New item" required>
                 <button type="submit">Add</button>
             </form>
             <div style="margin: 20px 0;">
-                <form action="/sync_to_calendar", method="POST" style="display: inline;">
+                <form action="/sync_to_calendar" method="POST" style="display: inline;">
                     <button type="submit" style="background-color: #2196F3;">Sync All to Calendar</button>
                 </form>
                 <a href="/calendar_events" style="margin-left: 10px;">
@@ -131,8 +131,27 @@ def sync_to_calendar():
         category, item = row
         result = add_todo_to_calendar(category, item)
         results.append(f"{category}: {item} - {result}")
-    # For now, just redirect. In a real app, you'd show results
-    redirect('/')
+
+    if not results:
+        result_html = "<li>No todo items found to sync.</li>"
+    else:
+        result_html = ''.join(f"<li>{result}</li>" for result in results)
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Sync Results</title>
+    </head>
+    <body>
+        <h1>Sync Results</h1>
+        <ul>{result_html}</ul>
+        <a href="/">Back to Todo List</a>
+    </body>
+    </html>
+    """
+
+    return html
 
 @route('/calendar_events')
 def calendar_events():

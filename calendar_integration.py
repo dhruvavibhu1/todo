@@ -14,21 +14,27 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 def get_calendar_service():
     """Get authenticated Google Calendar service"""
     creds = None
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    token_path = os.path.join(base_dir, 'token.json')
+    creds_path = os.path.join(base_dir, 'credentials.json')
+
     # The file token.json stores the user's access and refresh tokens
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists(token_path):
+        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             # You need to download credentials.json from Google Cloud Console
-            if not os.path.exists('credentials.json'):
-                raise FileNotFoundError("credentials.json not found. Please download it from Google Cloud Console.")
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            if not os.path.exists(creds_path):
+                raise FileNotFoundError(
+                    "credentials.json not found. Please download it from Google Cloud Console and place it in the project folder."
+                )
+            flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open('token.json', 'w') as token:
+        with open(token_path, 'w') as token:
             token.write(creds.to_json())
 
     service = build('calendar', 'v3', credentials=creds)

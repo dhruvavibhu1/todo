@@ -17,6 +17,7 @@ To enable Google Calendar integration:
    - Download the credentials JSON file and rename it to `credentials.json`
    - Place it in the same directory as the Python files
 5. Run the app and click "Sync All to Calendar" to authenticate
+6. After successful authentication, a `token.json` file is created automatically and will be used for future runs
 
 ## Features
 - Add todo items with categories
