@@ -40,14 +40,17 @@ def get_calendar_service():
     service = build('calendar', 'v3', credentials=creds)
     return service
 
-def add_todo_to_calendar(category, item):
+def add_todo_to_calendar(category, item, due_date=None, recurrence='none'):
     """Add a todo item as a calendar event"""
     try:
         service = get_calendar_service()
 
-        # Create event for tomorrow at 9 AM
-        tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
-        start_time = tomorrow.replace(hour=9, minute=0, second=0, microsecond=0)
+        # Create event for tomorrow at 9 AM unless a due date is provided
+        if due_date:
+            event_date = datetime.datetime.fromisoformat(due_date) if 'T' in due_date else datetime.datetime.fromisoformat(due_date + 'T09:00:00')
+        else:
+            event_date = datetime.datetime.now() + datetime.timedelta(days=1)
+        start_time = event_date.replace(hour=9, minute=0, second=0, microsecond=0)
         end_time = start_time + datetime.timedelta(hours=1)
 
         event = {
@@ -62,6 +65,16 @@ def add_todo_to_calendar(category, item):
                 'timeZone': 'UTC',
             },
         }
+
+        if recurrence and recurrence.lower() != 'none':
+            freq_map = {
+                'daily': 'DAILY',
+                'weekly': 'WEEKLY',
+                'monthly': 'MONTHLY'
+            }
+            freq_value = freq_map.get(recurrence.lower())
+            if freq_value:
+                event['recurrence'] = [f'RRULE:FREQ={freq_value}']
 
         event = service.events().insert(calendarId='primary', body=event).execute()
         return f"Event created: {event.get('htmlLink')}"

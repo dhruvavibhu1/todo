@@ -8,9 +8,9 @@ print("Started creating the todo database")
 #Creates the database in the current folder
 conn = sqlite3.connect('todo.db')
 
-#Creates the table with schema including due date and completed status
+#Creates the table with schema including due date, completed, and priority
 conn.execute(
-    "CREATE TABLE todo (category VARCHAR(50), item VARCHAR(100), due_date TEXT DEFAULT '', completed INTEGER DEFAULT 0, id INTEGER PRIMARY KEY)"
+    "CREATE TABLE todo (category VARCHAR(50), item VARCHAR(100), due_date TEXT DEFAULT '', completed INTEGER DEFAULT 0, priority TEXT DEFAULT 'Normal', tags TEXT DEFAULT '', recurrence TEXT DEFAULT 'none', id INTEGER PRIMARY KEY)"
 )
 
 #Adds 5 records to the table
