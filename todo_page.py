@@ -3,7 +3,6 @@
 import datetime
 import sqlite3
 from bottle import route, run, request, redirect
-from calendar_integration import add_todo_to_calendar, get_calendar_events
 
 
 def execute_query(query, params=(), fetch=False):
@@ -90,6 +89,7 @@ def todo_list():
     total_completed = get_total_completed()
     reward_points = total_completed * 10
     streak_days = calculate_streak()
+    current_time = datetime.datetime.now().strftime('%H:%M:%S')
     reward_level = get_reward_level(reward_points)
 
     query = "SELECT id, category, item, due_date, priority, completed FROM todo"
@@ -126,14 +126,16 @@ def todo_list():
             <td>{due_text}</td>
             <td><span class='priority-pill {priority_class}'>{priority_text}</span></td>
             <td>
-                <form action='/toggle_complete' method='POST'>
-                    <input type='hidden' name='todo_id' value='{row_id}'>
-                    <button type='submit'>{toggle_label}</button>
-                </form>
-                <form action='/delete' method='POST'>
-                    <input type='hidden' name='delitem' value='{row_id}'>
-                    <button type='submit'>Delete</button>
-                </form>
+                <div class='action-buttons'>
+                    <form class='inline-action' action='/toggle_complete' method='POST'>
+                        <input type='hidden' name='todo_id' value='{row_id}'>
+                        <button type='submit'>{toggle_label}</button>
+                    </form>
+                    <form class='inline-action' action='/delete' method='POST'>
+                        <input type='hidden' name='delitem' value='{row_id}'>
+                        <button type='submit'>Delete</button>
+                    </form>
+                </div>
             </td>
         </tr>
         """
@@ -159,6 +161,15 @@ def todo_list():
                     --accent: #f97316;
                     --muted: #64748b;
                     --shadow: 0 16px 40px rgba(24, 39, 75, 0.08);
+                    --streak-card-bg: #fffbf7;
+                    --streak-card-border: #f59e0b;
+                    --streak-card-height: auto;
+                }}
+
+                .metric-card.streak-card {{
+                    background: var(--streak-card-bg);
+                    border-color: var(--streak-card-border);
+                    height: var(--streak-card-height, auto);
                 }}
 
                 *, *::before, *::after {{
@@ -223,6 +234,13 @@ def todo_list():
                     color: #17202a;
                 }}
 
+                .metric-time {{
+                    margin: 8px 0 0;
+                    color: #334155;
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                }}
+
                 .metric-subtext {{
                     margin-top: 8px;
                     color: #52606d;
@@ -262,27 +280,46 @@ def todo_list():
                     margin: 24px 30px 0;
                 }}
 
-                .top-actions button, .top-actions form button, .top-actions .settings-button {{
-                    border: none;
-                    border-radius: 18px;
-                    padding: 12px 18px;
+                .top-actions button, .top-actions form button, .top-actions .settings-button, .search-filter button, .new-item-form button, .todo-table button {{
+                    border: 1px solid transparent;
+                    border-radius: 14px;
+                    padding: 10px 14px;
+                    font-size: 0.95rem;
+                    font-family: Inter, sans-serif;
                     cursor: pointer;
-                    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+                    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
                     font-weight: 600;
+                    min-height: 40px;
                 }}
 
                 .top-actions button.primary, .top-actions form button.primary {{
                     background: var(--primary);
                     color: white;
+                    box-shadow: 0 12px 24px rgba(64, 86, 255, 0.14);
                 }}
 
-                .top-actions button.secondary, .top-actions .settings-button {{
+                .top-actions button.secondary {{
                     background: var(--surface-strong);
                     color: #334155;
                     box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.12);
                 }}
 
-                .top-actions button:hover, .top-actions .settings-button:hover, .top-actions form button:hover {{
+                .settings-button {{
+                    background: #ffffff;
+                    color: #334155;
+                    border: 1px solid var(--border);
+                    box-shadow: none;
+                    padding: 10px 14px;
+                    border-radius: 14px;
+                    font-weight: 700;
+                    min-height: 38px;
+                }}
+
+                .settings-button:hover {{
+                    background: #f8fafc;
+                }}
+
+                .top-actions button:hover, .top-actions .settings-button:hover, .top-actions form button:hover, .search-filter button:hover, .new-item-form button:hover, .todo-table button:hover {{
                     transform: translateY(-1px);
                 }}
 
@@ -293,6 +330,10 @@ def todo_list():
                     padding: 0 30px 24px;
                 }}
 
+                .search-filter {{
+                    align-items: flex-end;
+                }}
+
                 .search-filter input,
                 .search-filter select,
                 .new-item-form input,
@@ -300,30 +341,84 @@ def todo_list():
                 .new-item-form select {{
                     width: 100%;
                     border: 1px solid var(--border);
-                    border-radius: 16px;
-                    padding: 14px 16px;
-                    font-size: 0.98rem;
+                    border-radius: 14px;
+                    padding: 12px 14px;
+                    font-size: 0.95rem;
                     color: #1f2937;
                     background: #fff;
+                }}
+
+                .search-filter button {{
+                    width: auto;
+                    justify-self: start;
+                    min-width: 100px;
+                    padding: 10px 14px;
+                    background: #334155;
+                    color: white;
+                    box-shadow: 0 12px 20px rgba(51, 65, 85, 0.14);
                 }}
 
                 .new-item-form button {{
                     width: fit-content;
                     justify-self: start;
-                    background: var(--primary);
+                    background: #14b8a6;
                     color: white;
+                }}
+
+                .action-buttons {{
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    align-items: center;
+                }}
+
+                .inline-action {{
+                    display: inline-block;
+                    margin: 0;
+                }}
+
+                .inline-action button {{
+                    min-width: 88px;
+                    padding: 8px 12px;
+                    background: #f8fafc;
+                    color: #334155;
+                    border-color: #d1d5db;
+                    box-shadow: none;
+                }}
+
+                .inline-action button:hover {{
+                    background: #eef2ff;
                 }}
 
                 .todo-table {{
                     width: 100%;
-                    border-collapse: separate;
+                    border: 1px solid var(--border);
+                    border-collapse: collapse;
                     border-spacing: 0;
+                    box-shadow: 0 14px 38px rgba(15, 23, 42, 0.06);
+                    background: #fff;
                 }}
 
                 .todo-table th,
                 .todo-table td {{
-                    padding: 16px 18px;
+                    padding: 14px 16px;
                     text-align: left;
+                    border: 1px solid var(--border);
+                }}
+
+                .todo-table th:nth-child(3),
+                .todo-table td:nth-child(3) {{
+                    width: 130px;
+                }}
+
+                .todo-table th:nth-child(4),
+                .todo-table td:nth-child(4) {{
+                    width: 110px;
+                }}
+
+                .todo-table th:nth-child(5),
+                .todo-table td:nth-child(5) {{
+                    width: 180px;
                 }}
 
                 .todo-table thead th {{
@@ -335,16 +430,19 @@ def todo_list():
 
                 .todo-table tbody tr {{
                     background: #ffffff;
-                    border-bottom: 1px solid var(--border);
                 }}
 
-                .todo-table tbody tr:last-child {{
-                    border-bottom: none;
+                .todo-table tbody tr:nth-child(even) {{
+                    background: #f8f9ff;
+                }}
+
+                .todo-table tbody tr:hover {{
+                    background: #eef2ff;
                 }}
 
                 .todo-table tbody tr.completed {{
                     color: #64748b;
-                    background: #f8fafc;
+                    background: #f3f4f6;
                 }}
 
                 .todo-table tbody tr.completed td {{
@@ -544,7 +642,6 @@ def todo_list():
                 <div class="page-card">
                     <header>
                         <h1>To-do list</h1>
-                        <p>Track your tasks, keep streaks going, and earn rewards for staying productive.</p>
                     </header>
                     <div class="hero">
                         <div class="summary-grid">
@@ -558,9 +655,10 @@ def todo_list():
                                 <p class="metric-value">{reward_points}</p>
                                 <p class="metric-subtext">Current reward level: {reward_level}</p>
                             </div>
-                            <div class="metric-card">
+                            <div class="metric-card streak-card">
                                 <p class="metric-title">Current streak</p>
                                 <p class="metric-value">{streak_days} day{'s' if streak_days != 1 else ''}</p>
+                                <p class="metric-time">Current time: {current_time}</p>
                                 <p class="metric-subtext">Consecutive completion days.</p>
                             </div>
                         </div>
@@ -650,12 +748,6 @@ def todo_list():
                         <input type="date" name="due_date" placeholder="Due date">
                         <button type="submit">Add item</button>
                     </form>
-                    <div class="top-actions">
-                        <form action="/sync_to_calendar" method="POST">
-                            <button type="submit" class="primary">Sync All to Calendar</button>
-                        </form>
-                        <button type="button" class="secondary" onclick="window.location.href='/calendar_events'">View Calendar Events</button>
-                    </div>
                     <table class="todo-table">
                         <thead>
                             <tr>
@@ -720,82 +812,6 @@ def new_item():
             (newcat, item, due_date or '', priority),
         )
     redirect('/')
-
-
-@route('/sync_to_calendar', method='POST')
-def sync_to_calendar():
-    """Sync all todo items to Google Calendar."""
-    rows = execute_query("SELECT category, item FROM todo", fetch=True)
-    results = []
-    for row in rows:
-        category, item = row
-        result = add_todo_to_calendar(category, item)
-        results.append(f"{category}: {item} - {result}")
-
-    if not results:
-        result_html = "<li>No todo items found to sync.</li>"
-    else:
-        result_html = ''.join(f"<li>{result}</li>" for result in results)
-
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Sync Results</title>
-        <style>
-            body {{ font-family: 'Inter', sans-serif; padding: 32px; background: #f8fafc; color: #1f2937; }}
-            .card {{ background: #ffffff; border: 1px solid #e5e9f0; border-radius: 24px; max-width: 760px; margin: 0 auto; padding: 28px; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); }}
-            h1 {{ margin-top: 0; }}
-            a.button {{ display: inline-flex; margin-top: 18px; padding: 12px 18px; background: #4056ff; color: white; border-radius: 16px; text-decoration: none; }}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h1>Sync Results</h1>
-            <ul>{result_html}</ul>
-            <a class="button" href="/">Back to Todo List</a>
-        </div>
-    </body>
-    </html>
-    """
-
-    return html
-
-
-@route('/calendar_events')
-def calendar_events():
-    """Show upcoming calendar events."""
-    events = get_calendar_events()
-
-    if isinstance(events, str):
-        event_content = f"<p>Error: {events}</p>"
-    else:
-        event_items = ''.join(f"<li>{event['summary']} - {event['start'].get('dateTime', event['start'].get('date'))}</li>" for event in events)
-        event_content = f"<ul>{event_items}</ul>"
-
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Calendar Events</title>
-        <style>
-            body {{ font-family: 'Inter', sans-serif; padding: 32px; background: #f8fafc; color: #1f2937; }}
-            .card {{ background: #ffffff; border: 1px solid #e5e9f0; border-radius: 24px; max-width: 760px; margin: 0 auto; padding: 28px; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08); }}
-            h1 {{ margin-top: 0; }}
-            a.button {{ display: inline-flex; margin-top: 18px; padding: 12px 18px; background: #4056ff; color: white; border-radius: 16px; text-decoration: none; }}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h1>Upcoming Calendar Events</h1>
-            {event_content}
-            <a class="button" href="/">Back to Todo List</a>
-        </div>
-    </body>
-    </html>
-    """
-
-    return html
 
 
 if __name__ == '__main__':
