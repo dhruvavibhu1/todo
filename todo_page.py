@@ -68,17 +68,6 @@ def calculate_streak():
     return streak
 
 
-def get_reward_level(points):
-    if points >= 200:
-        return 'Platinum'
-    if points >= 100:
-        return 'Gold'
-    if points >= 50:
-        return 'Silver'
-    if points > 0:
-        return 'Bronze'
-    return 'Newbie'
-
 
 @route('/')
 def todo_list():
@@ -87,10 +76,7 @@ def todo_list():
     priority_filter = request.query.get('priority', 'all')
 
     total_completed = get_total_completed()
-    reward_points = total_completed * 10
     streak_days = calculate_streak()
-    current_time = datetime.datetime.now().strftime('%H:%M:%S')
-    reward_level = get_reward_level(reward_points)
 
     query = "SELECT id, category, item, due_date, priority, completed FROM todo"
     conditions = []
@@ -170,6 +156,9 @@ def todo_list():
                     background: var(--streak-card-bg);
                     border-color: var(--streak-card-border);
                     height: var(--streak-card-height, auto);
+                    text-align: center;
+                    padding: 12px 14px;
+                    border-radius: 16px;
                 }}
 
                 *, *::before, *::after {{
@@ -200,22 +189,24 @@ def todo_list():
 
                 .hero {{
                     display: grid;
-                    gap: 24px;
-                    margin-bottom: 26px;
+                    gap: 18px;
+                    margin-bottom: 28px;
                 }}
 
                 .summary-grid {{
                     display: grid;
-                    grid-template-columns: repeat(3, minmax(0, 1fr));
-                    gap: 16px;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 18px;
+                    align-items: start;
                 }}
 
                 .metric-card {{
                     background: var(--surface);
                     border: 1px solid var(--border);
-                    border-radius: 24px;
-                    padding: 22px 24px;
+                    border-radius: 14px;
+                    padding: 12px 14px;
                     box-shadow: var(--shadow);
+                    min-height: 86px;
                 }}
 
                 .metric-title {{
@@ -229,7 +220,7 @@ def todo_list():
 
                 .metric-value {{
                     margin: 0;
-                    font-size: 2rem;
+                    font-size: 1.35rem;
                     font-weight: 700;
                     color: #17202a;
                 }}
@@ -257,6 +248,30 @@ def todo_list():
 
                 .page-card header {{
                     padding: 26px 30px 0;
+                }}
+
+                .clock-bar {{
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    width: 100%;
+                    padding: 12px 18px;
+                    border-radius: 12px;
+                    background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+                    color: #ffffff;
+                    box-shadow: 0 8px 20px rgba(37,99,235,0.12);
+                    margin-top: 8px;
+                    margin-bottom: 18px;
+                }}
+                .clock-bar .clock-time {{
+                    font-size: 1.6rem;
+                    font-weight: 900;
+                    letter-spacing: 0.01em;
+                }}
+                .clock-bar .clock-date {{
+                    font-size: 0.95rem;
+                    font-weight: 600;
+                    opacity: 0.95;
                 }}
 
                 .page-card h1 {{
@@ -312,6 +327,7 @@ def todo_list():
                     padding: 10px 14px;
                     border-radius: 14px;
                     font-weight: 700;
+                    font-family: 'Inter', sans-serif;
                     min-height: 38px;
                 }}
 
@@ -634,6 +650,25 @@ def todo_list():
                         document.getElementById('settings-content').classList.toggle('hidden');
                     }});
                     document.getElementById('reset-settings').addEventListener('click', resetSettings);
+                    
+                        // Live clock: updates every second
+                        function updateClock() {{
+                            const el = document.getElementById('page-clock');
+                            if (!el) return;
+                            const now = new Date();
+                            // Convert to UTC milliseconds, then add offset hours for UTC+10
+                            const utcMillis = now.getTime() + (now.getTimezoneOffset() * 60000);
+                            const offsetHours = 10; // UTC+10
+                            const target = new Date(utcMillis + offsetHours * 3600000);
+                                const dateStr = target.toLocaleDateString(undefined, {{ day: '2-digit', month: 'long', year: 'numeric' }});
+                                const timeStr = target.toLocaleTimeString();
+                                const timeEl = el.querySelector('.clock-time');
+                                const dateEl = el.querySelector('.clock-date');
+                                if (timeEl) timeEl.textContent = timeStr;
+                                if (dateEl) dateEl.textContent = dateStr;
+                        }}
+                        updateClock();
+                        setInterval(updateClock, 1000);
                 }});
             </script>
         </head>
@@ -642,6 +677,10 @@ def todo_list():
                 <div class="page-card">
                     <header>
                         <h1>To-do list</h1>
+                        <div id="page-clock" class="clock-bar" aria-live="polite">
+                            <div class="clock-time">--:--:--</div>
+                            <div class="clock-date">-- -- ----</div>
+                        </div>
                     </header>
                     <div class="hero">
                         <div class="summary-grid">
@@ -650,15 +689,10 @@ def todo_list():
                                 <p class="metric-value">{total_completed}</p>
                                 <p class="metric-subtext">Total tasks finished so far.</p>
                             </div>
-                            <div class="metric-card">
-                                <p class="metric-title">Reward points</p>
-                                <p class="metric-value">{reward_points}</p>
-                                <p class="metric-subtext">Current reward level: {reward_level}</p>
-                            </div>
                             <div class="metric-card streak-card">
                                 <p class="metric-title">Current streak</p>
                                 <p class="metric-value">{streak_days} day{'s' if streak_days != 1 else ''}</p>
-                                <p class="metric-time">Current time: {current_time}</p>
+                                
                                 <p class="metric-subtext">Consecutive completion days.</p>
                             </div>
                         </div>
